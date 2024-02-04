@@ -1,3 +1,7 @@
 from django.shortcuts import render
 
-# Create your views here.
+from django.http import HttpResponse
+
+
+def indeksi(request):
+    return HttpResponse("Heippa! Olet kysely-appin idex-sivulla.")
