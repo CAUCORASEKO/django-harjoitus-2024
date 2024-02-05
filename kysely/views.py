@@ -1,24 +1,45 @@
-from django.http import HttpResponse
-from django.shortcuts import render
+from django.http import HttpResponse, HttpResponseRedirect
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
+from django.views import generic
 
-from .models import Kysymys
-
-
-def indeksi(request):
-    kysymyslista = Kysymys.objects.order_by("-julkaisupvm")[:2]
-    context = {
-        "kysymykset": kysymyslista,
-    }
-    return render(request, "kysely/indeksi.html", context)
+from .models import Kysymys, Vaihtoehto
 
 
-def näytä(request, question_id):
-    return HttpResponse(f"Katsot juuri kysymystä {question_id}")
+class ListaNäkymä(generic.ListView):
+    template_name = "kysely/indeksi.html"
+    context_object_name = "kysymykset"
+
+    def get_queryset(self):
+        return Kysymys.objects.order_by("-julkaisupvm")[:2]
 
 
-def tulokset(request, question_id):
-    return HttpResponse(f"Katsot kysymyksen {question_id} tuloksia")
+class NäytäNäkymä(generic.DetailView):
+    model = Kysymys
+    template_name = "kysely/näytä.html"
 
 
-def äänestä(request, question_id):
-    return HttpResponse(f"Olet äänestämässä kysymykseen {question_id}")
+class TuloksetNäkymä(generic.DetailView):
+    model = Kysymys
+    template_name = "kysely/tulokset.html"
+
+
+def äänestä(request, kysymys_id):
+    kysym = get_object_or_404(Kysymys, pk=kysymys_id)
+    try:
+        valittu = kysym.vaihtoehto_set.get(pk=request.POST["valittu"])
+    except (KeyError, Vaihtoehto.DoesNotExist):
+        # Näytä kysymyslomake uudelleen
+        return render(
+            request,
+            "kysely/näytä.html",
+            {
+                "kysymys": kysym,
+                "virheviesti": "Et valinnut mitään vaihtoehtoa.",
+            },
+        )
+    else:
+        valittu.ääniä += 1
+        valittu.save()
+        osoite = reverse("kysely:tulokset", args=(kysym.id,))
+        return HttpResponseRedirect(osoite)

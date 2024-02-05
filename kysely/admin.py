@@ -2,6 +2,10 @@ from django.contrib import admin
 
 from .models import Kysymys, Vaihtoehto
 
+from django.contrib import admin
+
+from .models import Kysymys, Vaihtoehto
+
 admin.site.register(Kysymys)
 
 @admin.register(Vaihtoehto)
